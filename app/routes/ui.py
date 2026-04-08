@@ -227,8 +227,14 @@ def product_delete(product_id: int):
 @login_required
 def pos_terminal():
     """POS terminal UI. Uses existing /sales and /products APIs from JS."""
-    products = product_service.list_products()
-    customers = customer_service.search_customers(None)
+    # Plain dicts only: ``|tojson`` cannot serialize SQLAlchemy models (500 in production).
+    products = [
+        product_service.product_to_dict(p) for p in product_service.list_products()
+    ]
+    customers = [
+        customer_service.customer_to_dict(c)
+        for c in customer_service.search_customers(None)
+    ]
     return render_template(
         "pos.html",
         nav_active="pos",
