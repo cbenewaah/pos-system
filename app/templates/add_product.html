@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Add product · POS System{% endblock %}
+{% block content %}
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('ui.products_list') }}">Products</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">Add</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0">Add product</h1>
+  </div>
+
+  <div class="card pos-card">
+    <div class="card-body">
+      <form method="post" action="{{ url_for('ui.product_new') }}" class="col-lg-8">
+        {% include "includes/product_fields.html" %}
+        <div class="mt-4 d-flex flex-wrap gap-2">
+          <button type="submit" class="btn btn-pos-primary">Save product</button>
+          <a href="{{ url_for('ui.products_list') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

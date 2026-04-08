@@ -1,17 +1,106 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · POS System{% endblock %}
 {% block content %}
-  <div class="row">
-    <div class="col-lg-8 mx-auto">
-      <div class="card pos-card">
-        <div class="card-body p-4 text-center">
-          <h1 class="h4 mb-3">Welcome{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}</h1>
-          <p class="text-muted mb-0">
-            The full dashboard (today&apos;s sales, transactions, low stock) will be added in
-            <strong>Step 2</strong>. For now you can use the navigation to explore placeholders.
-          </p>
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Dashboard</h1>
+      <p class="text-muted mb-0">
+        Welcome back{% if current_user.is_authenticated %}, <strong>{{ current_user.username }}</strong>{% endif %}
+        <span class="ms-1">({{ current_user.role }})</span>
+      </p>
+    </div>
+    <div class="text-muted small text-md-end">
+      <div>Today&apos;s sales use the <strong>UTC</strong> calendar day</div>
+      <div class="font-monospace">{{ daily.date }}</div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-4">
+      <div class="card pos-card h-100 border border-2 border-warning border-opacity-50">
+        <div class="card-body">
+          <div class="text-uppercase small text-muted fw-semibold mb-1">Total sales today</div>
+          <div class="display-6 fw-bold text-dark">
+            {{ "%.2f"|format(daily.total_revenue) }}
+          </div>
+          <div class="small text-muted mt-2">Completed transactions only</div>
         </div>
       </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="card pos-card h-100">
+        <div class="card-body border-start border-warning border-4">
+          <div class="text-uppercase small text-muted fw-semibold mb-1">Transactions</div>
+          <div class="display-6 fw-bold">
+            {{ daily.transaction_count }}
+          </div>
+          <div class="small text-muted mt-2">Number of completed sales</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card pos-card h-100">
+        <div class="card-header bg-transparent py-3 small fw-semibold">
+          By payment method
+        </div>
+        <div class="card-body pt-0">
+          {% if daily.by_payment_method %}
+            <ul class="list-unstyled mb-0 small">
+              {% for method, amount in daily.by_payment_method.items() %}
+                <li class="d-flex justify-content-between py-1 border-bottom border-light">
+                  <span class="text-capitalize">{{ method }}</span>
+                  <span class="font-monospace">{{ "%.2f"|format(amount) }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-0">No payments recorded for this day.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card pos-card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="fw-semibold">Low stock (≤ {{ low_stock_threshold }})</span>
+      <a href="{{ url_for('ui.products_list') }}" class="btn btn-sm btn-pos-outline">Manage products</a>
+    </div>
+    <div class="card-body p-0">
+      {% if low_stock %}
+        <div class="table-responsive">
+          <table class="table pos-table mb-0">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in low_stock %}
+                <tr>
+                  <td class="fw-medium">{{ p.name }}</td>
+                  <td>{{ p.category }}</td>
+                  <td class="text-end">
+                    {% if p.quantity == 0 %}
+                      <span class="badge text-bg-danger">0</span>
+                    {% else %}
+                      <span class="badge text-bg-warning text-dark">{{ p.quantity }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end font-monospace">{{ "%.2f"|format(p.price) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">
+          No products at or below {{ low_stock_threshold }} units. Stock levels look good.
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ product.name }} · POS System{% endblock %}
+{% block content %}
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('ui.products_list') }}">Products</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0">Edit product</h1>
+    <p class="text-muted small mb-0 mt-1">
+      <span class="font-monospace">ID {{ product.id }}</span>
+    </p>
+  </div>
+
+  <div class="card pos-card">
+    <div class="card-body">
+      <form
+        method="post"
+        action="{{ url_for('ui.product_edit', product_id=product.id) }}"
+        class="col-lg-8"
+      >
+        {% include "includes/product_fields.html" %}
+        <div class="mt-4 d-flex flex-wrap gap-2">
+          <button type="submit" class="btn btn-pos-primary">Save changes</button>
+          <a href="{{ url_for('ui.products_list') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card pos-card border-danger border-opacity-25 mt-4">
+    <div class="card-body">
+      <h2 class="h6 text-danger mb-3">Danger zone</h2>
+      <p class="small text-muted mb-3">
+        Deleting is only allowed if this product is not linked to past sales.
+      </p>
+      <form
+        method="post"
+        action="{{ url_for('ui.product_delete', product_id=product.id) }}"
+        class="d-inline"
+        onsubmit="return confirm('Delete this product permanently?');"
+      >
+        <button type="submit" class="btn btn-outline-danger btn-sm">Delete product</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

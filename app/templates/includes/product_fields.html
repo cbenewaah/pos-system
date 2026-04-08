@@ -1,0 +1,74 @@
+{# Shared fields for add/edit product forms. Expects product (optional) and form_data (optional). #}
+{% set name_val = form_data.get('name', '') if form_data else (product.name if product else '') %}
+{% set cat_val = form_data.get('category', '') if form_data else (product.category if product else '') %}
+{% set price_val = form_data.get('price', '') if form_data else (product.price|string if product else '') %}
+{% set qty_val = form_data.get('quantity', '') if form_data else (product.quantity|string if product else '0') %}
+{% set bc_val = form_data.get('barcode', '') if form_data else (product.barcode or '' if product else '') %}
+
+<div class="mb-3">
+  <label class="form-label" for="pf-name">Name <span class="text-danger">*</span></label>
+  <input
+    type="text"
+    class="form-control"
+    id="pf-name"
+    name="name"
+    value="{{ name_val }}"
+    required
+    maxlength="200"
+    autocomplete="off"
+  />
+</div>
+<div class="mb-3">
+  <label class="form-label" for="pf-category">Category</label>
+  <input
+    type="text"
+    class="form-control"
+    id="pf-category"
+    name="category"
+    value="{{ cat_val }}"
+    placeholder="General"
+    maxlength="100"
+    autocomplete="off"
+  />
+</div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label" for="pf-price">Price <span class="text-danger">*</span></label>
+    <input
+      type="text"
+      class="form-control font-monospace"
+      id="pf-price"
+      name="price"
+      value="{{ price_val }}"
+      required
+      inputmode="decimal"
+      autocomplete="off"
+    />
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="pf-qty">Quantity in stock</label>
+    <input
+      type="number"
+      class="form-control font-monospace"
+      id="pf-qty"
+      name="quantity"
+      value="{{ qty_val }}"
+      min="0"
+      step="1"
+      autocomplete="off"
+    />
+  </div>
+</div>
+<div class="mb-0 mt-3">
+  <label class="form-label" for="pf-barcode">Barcode</label>
+  <input
+    type="text"
+    class="form-control font-monospace"
+    id="pf-barcode"
+    name="barcode"
+    value="{{ bc_val }}"
+    maxlength="64"
+    autocomplete="off"
+  />
+  <div class="form-text">Optional. Must be unique if set.</div>
+</div>

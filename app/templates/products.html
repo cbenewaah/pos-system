@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Products · POS System{% endblock %}
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Products</h1>
+      <p class="text-muted mb-0">
+        Search and browse the catalog. JSON API: <code class="small">GET /products</code>
+      </p>
+    </div>
+    {% if can_manage %}
+      <a href="{{ url_for('ui.product_new') }}" class="btn btn-pos-primary">Add product</a>
+    {% endif %}
+  </div>
+
+  <div class="card pos-card mb-4">
+    <div class="card-body">
+      <form class="row g-3 align-items-end" method="get" action="{{ url_for('ui.products_list') }}">
+        <div class="col-md-5">
+          <label class="form-label small text-muted mb-1" for="pq">Search</label>
+          <input
+            type="search"
+            class="form-control"
+            id="pq"
+            name="q"
+            value="{{ search_q }}"
+            placeholder="Name, category, or barcode"
+            autocomplete="off"
+          />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted mb-1" for="pcat">Category</label>
+          <input
+            type="text"
+            class="form-control"
+            id="pcat"
+            name="category"
+            value="{{ search_category }}"
+            placeholder="Filter by category"
+            autocomplete="off"
+          />
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-pos-primary flex-grow-1">Apply</button>
+          <a href="{{ url_for('ui.products_list') }}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card pos-card">
+    <div class="card-body p-0">
+      {% if products %}
+        <div class="table-responsive">
+          <table class="table pos-table mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Qty</th>
+                <th>Barcode</th>
+                {% if can_manage %}<th class="text-end">Actions</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in products %}
+                <tr>
+                  <td class="fw-medium">{{ p.name }}</td>
+                  <td>{{ p.category }}</td>
+                  <td class="text-end font-monospace">{{ "%.2f"|format(p.price) }}</td>
+                  <td class="text-end font-monospace">{{ p.quantity }}</td>
+                  <td class="small text-muted font-monospace">{{ p.barcode or "—" }}</td>
+                  {% if can_manage %}
+                    <td class="text-end">
+                      <a
+                        href="{{ url_for('ui.product_edit', product_id=p.id) }}"
+                        class="btn btn-sm btn-pos-outline"
+                        >Edit</a
+                      >
+                    </td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">
+          No products match your filters.
+          {% if can_manage %}
+            <div class="mt-2">
+              <a href="{{ url_for('ui.product_new') }}">Add a product</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
