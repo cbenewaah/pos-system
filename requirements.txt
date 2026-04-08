@@ -12,3 +12,6 @@ PyJWT>=2.8,<3
 
 # Production WSGI server (Render, etc.) — required for the Procfile "web" command
 gunicorn>=23.0
+
+# Tests (pytest + Flask test client)
+pytest>=8.0,<9

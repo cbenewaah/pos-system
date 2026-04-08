@@ -14,6 +14,13 @@ def _utc_now():
     return datetime.now(timezone.utc)
 
 
+class SaleStatus:
+    """draft = cart / building; completed = paid and inventory deducted."""
+
+    DRAFT = "draft"
+    COMPLETED = "completed"
+
+
 class Sale(db.Model):
     __tablename__ = "sales"
 
@@ -21,6 +28,15 @@ class Sale(db.Model):
     date = db.Column(db.DateTime(timezone=True), nullable=False, default=_utc_now)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True)
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default=SaleStatus.DRAFT,
+    )
+    # Line sums (before / after discount); total_amount is the amount to pay
+    subtotal = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    discount_percent = db.Column(db.Numeric(5, 2), nullable=False, default=0)
+    discount_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     total_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     # Quick summary for receipts; detailed rows live in payments (e.g. split tender)
     payment_method = db.Column(db.String(20), nullable=True)

@@ -1,0 +1,149 @@
+/*
+  POS System — yellow + black theme (accents only; no full yellow pages).
+  Complements Bootstrap; overrides stay scoped with .pos- or body classes.
+*/
+
+:root {
+  --pos-yellow: #ffc107;
+  --pos-yellow-hover: #e0a800;
+  --pos-black: #212529;
+  --pos-light-bg: #f8f9fa;
+  --pos-white: #ffffff;
+}
+
+body.pos-body {
+  background-color: var(--pos-light-bg);
+  color: var(--pos-black);
+  min-height: 100vh;
+}
+
+/* ---- Navbar (dark + yellow accents) ---- */
+.navbar.pos-navbar {
+  background-color: var(--pos-black) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar.pos-navbar .navbar-brand {
+  color: var(--pos-yellow) !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.navbar.pos-navbar .nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem !important;
+  border-radius: 0.35rem;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.navbar.pos-navbar .nav-link:hover {
+  color: var(--pos-white) !important;
+  background-color: rgba(255, 193, 7, 0.12);
+}
+
+.navbar.pos-navbar .nav-link.active {
+  color: var(--pos-black) !important;
+  background-color: var(--pos-yellow);
+}
+
+.navbar.pos-navbar .navbar-toggler {
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+.navbar.pos-navbar .navbar-toggler-icon {
+  filter: invert(1) brightness(1.2);
+}
+
+/* ---- Buttons ---- */
+.btn-pos-primary {
+  background-color: var(--pos-yellow);
+  border-color: var(--pos-yellow);
+  color: var(--pos-black);
+  font-weight: 600;
+}
+
+.btn-pos-primary:hover,
+.btn-pos-primary:focus {
+  background-color: var(--pos-yellow-hover);
+  border-color: var(--pos-yellow-hover);
+  color: var(--pos-black);
+}
+
+.btn-pos-outline {
+  color: var(--pos-yellow);
+  border-color: var(--pos-yellow);
+  font-weight: 500;
+}
+
+.btn-pos-outline:hover {
+  background-color: var(--pos-yellow);
+  color: var(--pos-black);
+}
+
+/* ---- Cards ---- */
+.card.pos-card {
+  background-color: var(--pos-white);
+  border: 1px solid rgba(33, 37, 41, 0.08);
+  box-shadow: 0 4px 12px rgba(33, 37, 41, 0.06);
+  border-radius: 0.5rem;
+}
+
+.card.pos-card .card-header {
+  background-color: rgba(255, 193, 7, 0.15);
+  border-bottom: 1px solid rgba(33, 37, 41, 0.08);
+  color: var(--pos-black);
+  font-weight: 600;
+}
+
+/* ---- Tables ---- */
+.table.pos-table {
+  border-color: rgba(33, 37, 41, 0.12);
+}
+
+.table.pos-table thead th {
+  background-color: var(--pos-black);
+  color: var(--pos-white);
+  border-color: var(--pos-black);
+  font-weight: 600;
+}
+
+.table.pos-table tbody tr:hover {
+  background-color: rgba(255, 193, 7, 0.08);
+}
+
+/* ---- POS layout helpers (Step 4 will use more) ---- */
+.pos-cart-panel {
+  border-left: 3px solid var(--pos-yellow);
+  background-color: var(--pos-white);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 10px rgba(33, 37, 41, 0.06);
+}
+
+.pos-total-display {
+  background-color: rgba(255, 193, 7, 0.2);
+  border: 2px solid var(--pos-yellow);
+  border-radius: 0.5rem;
+  color: var(--pos-black);
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding: 1rem;
+}
+
+/* ---- Auth / misc ---- */
+.pos-login-wrap {
+  max-width: 420px;
+}
+
+footer.pos-footer {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.text-pos-yellow {
+  color: var(--pos-yellow) !important;
+}
+
+.bg-pos-dark {
+  background-color: var(--pos-black) !important;
+}

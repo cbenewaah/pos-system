@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · POS System{% endblock %}
+{% block content %}
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card pos-card">
+        <div class="card-body p-4 text-center">
+          <h1 class="h4 mb-3">Welcome{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}</h1>
+          <p class="text-muted mb-0">
+            The full dashboard (today&apos;s sales, transactions, low stock) will be added in
+            <strong>Step 2</strong>. For now you can use the navigation to explore placeholders.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,9 +1,54 @@
 """
-Simple health endpoint to verify the app is running.
+Service info and health check.
 
-Database connectivity can be checked in a later step once models exist.
+GET / returns JSON for API clients; browsers are redirected to the web UI
+so opening http://localhost:5000/ shows the login page instead of raw JSON.
 """
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, redirect, request, url_for
+from flask_login import current_user
+
+# Site root (e.g. https://your-app.onrender.com/)
+root_bp = Blueprint("root", __name__)
+
+_API_INDEX = {
+    "service": "pos-system",
+    "status": "ok",
+    "message": "API is running. Use /api/health for a simple health check. Web UI: /login",
+    "auth": {
+        "register": "POST /auth/register",
+        "login": "POST /auth/login",
+        "logout": "POST /auth/logout",
+        "me": "GET /auth/me",
+        "admin_check": "GET /auth/admin-check (Admin only)",
+    },
+    "products": "GET/POST /products; GET/PUT/DELETE /products/<id> (auth required)",
+    "sales": "POST /sales, POST /sales/<id>/items, PATCH /sales/<id>, POST /sales/<id>/complete",
+    "inventory": "GET /inventory/low-stock; PUT /inventory/products/<id>/quantity (Admin/Manager)",
+    "payments": "GET /payments/sale/<sale_id> (see also sale.payments in GET /sales/<id>)",
+    "customers": "GET/POST /customers; GET/PUT /customers/<id>; GET /customers/<id>/sales",
+    "receipts": "GET /receipts/<sale_id> (?format=text for plain text; completed sales only)",
+    "reports": "GET /reports/daily, /reports/products, /reports/inventory (Admin/Manager)",
+}
+
+
+@root_bp.get("/")
+def index():
+    """
+    - Browsers (typical Accept: text/html): redirect to /login or /dashboard.
+    - API / curl: ``Accept: application/json`` or ``?format=json`` → same JSON as before.
+    """
+    prefers_json = (
+        request.args.get("format") == "json"
+        or request.accept_mimetypes.best_match(["application/json", "text/html"])
+        == "application/json"
+    )
+    if prefers_json:
+        return jsonify(_API_INDEX)
+
+    if current_user.is_authenticated:
+        return redirect(url_for("ui.dashboard"))
+    return redirect(url_for("ui.login"))
+
 
 bp = Blueprint("health", __name__, url_prefix="/api")
 

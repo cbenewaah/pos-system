@@ -1,0 +1,19 @@
+{# Reused for Products / POS stubs until Steps 3–4 #}
+{% extends "base.html" %}
+{% block title %}{{ page_title }} · POS System{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card pos-card text-center">
+        <div class="card-body p-5">
+          <h1 class="h4 mb-3">{{ page_title }}</h1>
+          <p class="text-muted mb-0">
+            This page will be built in <strong>{{ step_label }}</strong>.
+            The JSON API is unchanged at
+            <code class="user-select-all">{{ api_hint }}</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

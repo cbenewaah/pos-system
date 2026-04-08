@@ -5,6 +5,8 @@ Passwords are never stored in plain text — only password_hash (see auth step).
 """
 from __future__ import annotations
 
+from flask_login import UserMixin
+
 from app.extensions import db
 
 
@@ -16,7 +18,7 @@ class UserRole:
     CASHIER = "Cashier"
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
