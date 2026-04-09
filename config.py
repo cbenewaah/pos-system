@@ -46,6 +46,10 @@ class Config:
     STORE_NAME = os.environ.get("STORE_NAME", "POS Store")
     STORE_ADDRESS = os.environ.get("STORE_ADDRESS", "")
     STORE_PHONE = os.environ.get("STORE_PHONE", "")
+    # Drop dead connections before use (fixes “server closed the connection unexpectedly”).
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+    }
 
 
 class DevelopmentConfig(Config):
@@ -53,6 +57,11 @@ class DevelopmentConfig(Config):
 
     DEBUG = True
     SESSION_COOKIE_SECURE = False
+    # Recycle connections before managed Postgres (e.g. Render) idle-closes them.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": int(os.environ.get("SQLALCHEMY_POOL_RECYCLE", "280")),
+    }
 
 
 class ProductionConfig(Config):
@@ -66,6 +75,10 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
     PREFERRED_URL_SCHEME = "https"
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": int(os.environ.get("SQLALCHEMY_POOL_RECYCLE", "280")),
+    }
 
 
 class TestingConfig(Config):
