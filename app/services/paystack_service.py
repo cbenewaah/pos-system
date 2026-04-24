@@ -53,6 +53,7 @@ def initialize_transaction(
     amount: Decimal,
     email: str,
     payment_method: str,
+    callback_url: str | None = None,
 ) -> dict[str, Any]:
     method = (payment_method or "").strip().lower()
     channels = ["card"] if method == "card" else ["mobile_money"]
@@ -65,6 +66,8 @@ def initialize_transaction(
         "channels": channels,
         "metadata": {"sale_id": sale_id, "payment_method": method},
     }
+    if callback_url:
+        payload["callback_url"] = callback_url
     timeout = int(current_app.config.get("PAYSTACK_VERIFY_TIMEOUT", 20))
     try:
         resp = requests.post(

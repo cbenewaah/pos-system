@@ -28,6 +28,7 @@
 
   let sale = null;
   let busy = false;
+  let paystackReturnHandled = false;
 
   const money = (n) => Number(n || 0).toFixed(2);
   const parseMoney = (value) => {
@@ -84,6 +85,52 @@
     // Fallback when popup blockers prevent new tabs.
     window.location.assign(receiptUrl);
     return false;
+  };
+
+  const clearPaystackQueryFromUrl = () => {
+    if (!window.history?.replaceState) return;
+    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  };
+
+  const handlePaystackReturn = async () => {
+    if (paystackReturnHandled) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paystack") !== "1") return;
+    paystackReturnHandled = true;
+
+    const saleId = Number(params.get("sale_id"));
+    const method = (params.get("method") || "").trim().toLowerCase();
+    const reference = (params.get("reference") || params.get("trxref") || "").trim();
+    if (!saleId || !reference || (method !== "momo" && method !== "card")) {
+      clearPaystackQueryFromUrl();
+      setFeedback("Could not verify returned Paystack payment details.", "warning");
+      return;
+    }
+
+    setBusy(true);
+    setFeedback("Verifying Paystack payment...", "info");
+    try {
+      const verified = await api(`/sales/${saleId}/paystack/verify`, {
+        method: "POST",
+        body: JSON.stringify({ payment_method: method, reference }),
+      });
+      sale = verified.sale;
+      const receiptUrl = `/receipt/${sale.id}`;
+      renderSale();
+      if (els.receiptLink) {
+        els.receiptLink.href = receiptUrl;
+        els.receiptLink.classList.remove("d-none");
+      }
+      clearPaystackQueryFromUrl();
+      // Keep everything in the same app tab.
+      window.location.assign(receiptUrl);
+    } catch (err) {
+      clearPaystackQueryFromUrl();
+      setFeedback(err.message || "Paystack payment verification failed.", "danger");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const api = async (url, options = {}) => {
@@ -297,39 +344,12 @@
           method: "POST",
           body: JSON.stringify({ payment_method: method }),
         });
-        if (init?.authorization_url) {
-          // Browser popup fallback if backend could not open the URL.
-          window.open(init.authorization_url, "_blank", "noopener");
-        }
-        setFeedback("Complete payment on Paystack, then return here to verify.", "info");
-
-        const shouldVerify = window.confirm("After you complete payment on Paystack, click OK to verify this transaction.");
-        if (!shouldVerify) {
-          setFeedback("Payment verification cancelled. Sale not completed.", "warning");
+        if (!init?.authorization_url) {
+          setFeedback("Could not open Paystack payment page.", "danger");
           return;
         }
-
-        const verified = await api(`/sales/${sale.id}/paystack/verify`, {
-          method: "POST",
-          body: JSON.stringify({
-            payment_method: method,
-            reference: init.reference,
-          }),
-        });
-        sale = verified.sale;
-        const receiptUrl = `/receipt/${sale.id}`;
-        renderSale();
-        if (els.receiptLink) {
-          els.receiptLink.href = receiptUrl;
-          els.receiptLink.classList.remove("d-none");
-        }
-        const opened = openReceiptWindow(receiptUrl);
-        setFeedback(
-          opened
-            ? `Payment verified and sale completed. Receipt #${sale.id} opened.`
-            : `Payment verified and sale completed. Popup blocked; opening receipt on this tab.`,
-          "success"
-        );
+        // Open Paystack in the same app tab (no new tab/window).
+        window.location.assign(init.authorization_url);
         return;
       }
       const data = await api(`/sales/${sale.id}/complete`, {
@@ -435,4 +455,5 @@
   renderProducts();
   renderSale();
   refreshCashChange();
+  handlePaystackReturn();
 })();

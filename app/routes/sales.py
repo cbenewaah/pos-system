@@ -4,9 +4,8 @@ Sales API — draft sale (cart), line items, discounts, complete transaction.
 from __future__ import annotations
 
 from decimal import Decimal
-import webbrowser
 
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request, url_for
 
 from app.models.sale import SaleStatus
 from app.services import paystack_service, sales_service
@@ -154,18 +153,24 @@ def initialize_paystack_payment(sale_id: int):
     email = customer_email or fallback_email
     if not customer_email and configured_email and "@" in configured_email:
         email = configured_email
+    callback_url = url_for(
+        "ui.pos_terminal",
+        _external=True,
+        paystack="1",
+        sale_id=sale.id,
+        method=method,
+    )
     try:
         initialized = paystack_service.initialize_transaction(
             sale_id=sale.id,
             amount=total,
             email=email,
             payment_method=method,
+            callback_url=callback_url,
         )
     except paystack_service.PaystackError as e:
         return _err(str(e), 400)
 
-    # Best-effort open in default browser for local desktop setups.
-    webbrowser.open(initialized["authorization_url"])
     return jsonify(
         {
             "reference": initialized["reference"],
