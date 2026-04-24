@@ -4,7 +4,7 @@ Service info and health check.
 GET / returns JSON for API clients; browsers are redirected to the web UI
 so opening http://localhost:5000/ shows the login page instead of raw JSON.
 """
-from flask import Blueprint, jsonify, redirect, request, url_for
+from flask import Blueprint, current_app, jsonify, redirect, request, url_for
 from flask_login import current_user
 
 # Site root (e.g. https://your-app.onrender.com/)
@@ -56,3 +56,21 @@ bp = Blueprint("health", __name__, url_prefix="/api")
 @bp.get("/health")
 def health():
     return jsonify({"status": "ok", "service": "pos-system"})
+
+
+@bp.get("/debug/paystack-config")
+def debug_paystack_config():
+    """
+    Runtime-safe Paystack config diagnostics.
+    Does not expose the full secret key.
+    """
+    secret = str(current_app.config.get("PAYSTACK_SECRET_KEY", "") or "").strip()
+    return jsonify(
+        {
+            "paystack_secret_key_set": bool(secret),
+            "paystack_secret_key_prefix": secret[:7] if secret else "",
+            "paystack_base_url": current_app.config.get("PAYSTACK_BASE_URL", ""),
+            "paystack_currency": current_app.config.get("PAYSTACK_CURRENCY", ""),
+            "paystack_verify_timeout": current_app.config.get("PAYSTACK_VERIFY_TIMEOUT", 20),
+        }
+    )

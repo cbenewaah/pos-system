@@ -6,8 +6,9 @@ from __future__ import annotations
 from decimal import Decimal
 import webbrowser
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 
+from app.models.sale import SaleStatus
 from app.services import paystack_service, sales_service
 from app.utils.http_auth import require_auth
 
@@ -130,7 +131,7 @@ def initialize_paystack_payment(sale_id: int):
         return _err("Sale not found", 404)
     if sale.user_id != g.current_user.id:
         return _err("You can only modify your own draft sales", 403)
-    if sale.status != "draft":
+    if sale.status != SaleStatus.DRAFT:
         return _err("Sale is no longer editable", 400)
     if not sale.items:
         return _err("Add at least one item before payment.", 400)
@@ -149,7 +150,10 @@ def initialize_paystack_payment(sale_id: int):
     fallback_email = g.current_user.username
     if "@" not in fallback_email:
         fallback_email = f"{fallback_email}@example.com"
+    configured_email = str(current_app.config.get("PAYSTACK_DEFAULT_EMAIL", "")).strip()
     email = customer_email or fallback_email
+    if not customer_email and configured_email and "@" in configured_email:
+        email = configured_email
     try:
         initialized = paystack_service.initialize_transaction(
             sale_id=sale.id,
@@ -179,7 +183,7 @@ def verify_paystack_payment(sale_id: int):
         return _err("Sale not found", 404)
     if sale.user_id != g.current_user.id:
         return _err("You can only modify your own draft sales", 403)
-    if sale.status != "draft":
+    if sale.status != SaleStatus.DRAFT:
         return _err("Sale is no longer editable", 400)
 
     data = request.get_json(silent=True) or {}
@@ -201,6 +205,17 @@ def verify_paystack_payment(sale_id: int):
         return _err("Payment was not successful or was cancelled.", 400)
     if int(verified.get("amount") or 0) != expected_minor_amount:
         return _err("Verified payment amount does not match sale total.", 400)
+    verified_currency = (verified.get("currency") or "").upper()
+    expected_currency = str(current_app.config.get("PAYSTACK_CURRENCY", "GHS")).upper()
+    if verified_currency and verified_currency != expected_currency:
+        return _err("Verified payment currency does not match configured currency.", 400)
+    metadata = verified.get("metadata") or {}
+    meta_sale_id = metadata.get("sale_id")
+    try:
+        if meta_sale_id is not None and int(meta_sale_id) != sale.id:
+            return _err("Verified payment does not belong to this sale.", 400)
+    except (TypeError, ValueError):
+        return _err("Paystack metadata for sale validation is invalid.", 400)
 
     try:
         completed = sales_service.complete_sale(
