@@ -5,6 +5,7 @@ Flask-Migrate>=4.0,<5
 SQLAlchemy>=2.0,<3
 psycopg2-binary>=2.9,<3
 python-dotenv>=1.0,<2
+requests>=2.31,<3
 
 # Used in later steps (auth)
 Flask-Login>=0.6,<1

@@ -46,6 +46,11 @@ class Config:
     STORE_NAME = os.environ.get("STORE_NAME", "POS Store")
     STORE_ADDRESS = os.environ.get("STORE_ADDRESS", "")
     STORE_PHONE = os.environ.get("STORE_PHONE", "")
+    PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
+    PAYSTACK_BASE_URL = os.environ.get("PAYSTACK_BASE_URL", "https://api.paystack.co")
+    PAYSTACK_CURRENCY = os.environ.get("PAYSTACK_CURRENCY", "GHS")
+    PAYSTACK_DEFAULT_EMAIL = os.environ.get("PAYSTACK_DEFAULT_EMAIL", "customer@example.com")
+    PAYSTACK_VERIFY_TIMEOUT = int(os.environ.get("PAYSTACK_VERIFY_TIMEOUT", "20"))
     # Drop dead connections before use (fixes “server closed the connection unexpectedly”).
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

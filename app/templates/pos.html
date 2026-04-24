@@ -71,9 +71,29 @@
             <label class="form-label small mb-1" for="pos-payment-method">Payment method</label>
             <select id="pos-payment-method" class="form-select form-select-sm">
               <option value="cash">Cash</option>
-              <option value="momo">Momo</option>
+              <option value="momo">Mobile Money</option>
               <option value="card">Card</option>
             </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small mb-1" for="pos-amount-paid">Amount Paid</label>
+            <input
+              id="pos-amount-paid"
+              type="number"
+              min="0"
+              step="0.01"
+              class="form-control form-control-sm font-monospace"
+              value="0"
+            />
+            <div id="pos-cash-warning" class="small text-danger mt-1 d-none">
+              Amount paid is less than the total.
+            </div>
+          </div>
+          <div class="pos-change-display mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Change</span>
+              <span id="pos-change" class="font-monospace">0.00</span>
+            </div>
           </div>
           <div class="pos-total-display mb-3">
             <div class="d-flex justify-content-between"><span>Subtotal</span><span id="pos-subtotal" class="font-monospace">0.00</span></div>

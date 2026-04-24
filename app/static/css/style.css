@@ -130,6 +130,15 @@ body.pos-body {
   padding: 1rem;
 }
 
+.pos-change-display {
+  background-color: var(--pos-yellow);
+  border: 2px solid var(--pos-yellow-hover);
+  border-radius: 0.5rem;
+  color: var(--pos-black);
+  font-weight: 700;
+  padding: 0.6rem 0.8rem;
+}
+
 /* ---- Auth / misc ---- */
 .pos-login-wrap {
   max-width: 420px;

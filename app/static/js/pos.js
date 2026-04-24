@@ -14,6 +14,9 @@
     discountPercent: document.getElementById("pos-discount-percent"),
     discountAmount: document.getElementById("pos-discount-amount"),
     paymentMethod: document.getElementById("pos-payment-method"),
+    amountPaid: document.getElementById("pos-amount-paid"),
+    change: document.getElementById("pos-change"),
+    cashWarning: document.getElementById("pos-cash-warning"),
     subtotal: document.getElementById("pos-subtotal"),
     total: document.getElementById("pos-total"),
     applyDiscount: document.getElementById("pos-apply-discount"),
@@ -27,6 +30,35 @@
   let busy = false;
 
   const money = (n) => Number(n || 0).toFixed(2);
+  const parseMoney = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+  const isCashMethod = () => (els.paymentMethod?.value || "cash") === "cash";
+  const currentTotal = () => parseMoney(sale?.total_amount);
+
+  const refreshCashChange = () => {
+    const total = currentTotal();
+    const paid = parseMoney(els.amountPaid?.value || 0);
+    const isCash = isCashMethod();
+    const change = paid - total;
+    const insufficientCash = Boolean(isCash && total > 0 && paid < total);
+
+    if (els.change) {
+      els.change.textContent = money(change);
+      els.change.classList.toggle("text-danger", insufficientCash);
+    }
+    if (els.cashWarning) {
+      els.cashWarning.classList.toggle("d-none", !insufficientCash || !sale?.id);
+    }
+    if (els.amountPaid) {
+      els.amountPaid.disabled = busy || !isCash;
+    }
+    if (els.checkout) {
+      els.checkout.disabled = busy || insufficientCash;
+    }
+    return { insufficientCash };
+  };
 
   const setFeedback = (msg, type = "muted") => {
     if (!els.feedback) return;
@@ -36,13 +68,14 @@
 
   const setBusy = (state) => {
     busy = state;
-    [els.applyDiscount, els.checkout, els.newSale].forEach((b) => {
+    [els.applyDiscount, els.newSale].forEach((b) => {
       if (b) b.disabled = state;
     });
     const buttons = root.querySelectorAll(".pos-add-btn");
     buttons.forEach((b) => {
       b.disabled = state;
     });
+    refreshCashChange();
   };
 
   const api = async (url, options = {}) => {
@@ -107,6 +140,7 @@
         els.receiptLink.classList.add("d-none");
       }
     }
+    refreshCashChange();
 
     if (!sale || !sale.items || !sale.items.length) {
       els.cartItems.innerHTML = `<div class="text-muted">No items in cart.</div>`;
@@ -243,9 +277,48 @@
       setFeedback("Start a sale and add items first.", "warning");
       return;
     }
+    if (isCashMethod() && refreshCashChange().insufficientCash) {
+      setFeedback("Amount paid is less than total for cash checkout.", "warning");
+      return;
+    }
     setBusy(true);
     try {
       const method = els.paymentMethod.value || "cash";
+      if (method === "momo" || method === "card") {
+        const init = await api(`/sales/${sale.id}/paystack/initialize`, {
+          method: "POST",
+          body: JSON.stringify({ payment_method: method }),
+        });
+        if (init?.authorization_url) {
+          // Browser popup fallback if backend could not open the URL.
+          window.open(init.authorization_url, "_blank", "noopener");
+        }
+        setFeedback("Complete payment on Paystack, then return here to verify.", "info");
+
+        const shouldVerify = window.confirm("After you complete payment on Paystack, click OK to verify this transaction.");
+        if (!shouldVerify) {
+          setFeedback("Payment verification cancelled. Sale not completed.", "warning");
+          return;
+        }
+
+        const verified = await api(`/sales/${sale.id}/paystack/verify`, {
+          method: "POST",
+          body: JSON.stringify({
+            payment_method: method,
+            reference: init.reference,
+          }),
+        });
+        sale = verified.sale;
+        const receiptUrl = `/receipt/${sale.id}`;
+        renderSale();
+        if (els.receiptLink) {
+          els.receiptLink.href = receiptUrl;
+          els.receiptLink.classList.remove("d-none");
+        }
+        setFeedback(`Payment verified and sale completed. Receipt #${sale.id} ready.`, "success");
+        window.open(receiptUrl, "_blank", "noopener");
+        return;
+      }
       const data = await api(`/sales/${sale.id}/complete`, {
         method: "POST",
         body: JSON.stringify({ payment_method: method }),
@@ -321,6 +394,19 @@
   });
 
   els.search?.addEventListener("input", renderProducts);
+  els.amountPaid?.addEventListener("input", refreshCashChange);
+  els.paymentMethod?.addEventListener("change", () => {
+    if (!isCashMethod()) {
+      refreshCashChange();
+      return;
+    }
+    const paid = parseMoney(els.amountPaid?.value || 0);
+    const total = currentTotal();
+    if (paid <= 0 && total > 0 && els.amountPaid) {
+      els.amountPaid.value = money(total);
+    }
+    refreshCashChange();
+  });
   els.customer?.addEventListener("change", () => {
     if (!sale?.id) return;
     setFeedback("Customer changes apply when you start a new sale.", "warning");
@@ -331,4 +417,5 @@
 
   renderProducts();
   renderSale();
+  refreshCashChange();
 })();

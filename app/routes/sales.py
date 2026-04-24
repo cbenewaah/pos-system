@@ -3,9 +3,12 @@ Sales API — draft sale (cart), line items, discounts, complete transaction.
 """
 from __future__ import annotations
 
+from decimal import Decimal
+import webbrowser
+
 from flask import Blueprint, g, jsonify, request
 
-from app.services import sales_service
+from app.services import paystack_service, sales_service
 from app.utils.http_auth import require_auth
 
 bp = Blueprint("sales", __name__, url_prefix="/sales")
@@ -116,6 +119,98 @@ def complete_sale(sale_id: int):
     except PermissionError:
         return _err("You can only complete your own draft sales", 403)
     return jsonify({"sale": sales_service.sale_to_dict(sale)}), 200
+
+
+@bp.post("/<int:sale_id>/paystack/initialize")
+@require_auth
+def initialize_paystack_payment(sale_id: int):
+    """Initialize a Paystack card/mobile money payment for a draft sale."""
+    sale = sales_service.get_sale_by_id(sale_id)
+    if sale is None:
+        return _err("Sale not found", 404)
+    if sale.user_id != g.current_user.id:
+        return _err("You can only modify your own draft sales", 403)
+    if sale.status != "draft":
+        return _err("Sale is no longer editable", 400)
+    if not sale.items:
+        return _err("Add at least one item before payment.", 400)
+
+    data = request.get_json(silent=True) or {}
+    method = (data.get("payment_method") or "").strip().lower()
+    if method not in {"momo", "card"}:
+        return _err('Paystack payments require "momo" or "card" method.', 400)
+
+    sales_service._recompute_totals(sale)
+    total = Decimal(sale.total_amount).quantize(Decimal("0.01"))
+    if total <= 0:
+        return _err("Sale total must be greater than zero.", 400)
+
+    customer_email = (sale.customer.email if sale.customer and sale.customer.email else None)
+    fallback_email = g.current_user.username
+    if "@" not in fallback_email:
+        fallback_email = f"{fallback_email}@example.com"
+    email = customer_email or fallback_email
+    try:
+        initialized = paystack_service.initialize_transaction(
+            sale_id=sale.id,
+            amount=total,
+            email=email,
+            payment_method=method,
+        )
+    except paystack_service.PaystackError as e:
+        return _err(str(e), 400)
+
+    # Best-effort open in default browser for local desktop setups.
+    webbrowser.open(initialized["authorization_url"])
+    return jsonify(
+        {
+            "reference": initialized["reference"],
+            "authorization_url": initialized["authorization_url"],
+        }
+    )
+
+
+@bp.post("/<int:sale_id>/paystack/verify")
+@require_auth
+def verify_paystack_payment(sale_id: int):
+    """Verify a Paystack transaction and complete sale only on success."""
+    sale = sales_service.get_sale_by_id(sale_id)
+    if sale is None:
+        return _err("Sale not found", 404)
+    if sale.user_id != g.current_user.id:
+        return _err("You can only modify your own draft sales", 403)
+    if sale.status != "draft":
+        return _err("Sale is no longer editable", 400)
+
+    data = request.get_json(silent=True) or {}
+    reference = (data.get("reference") or "").strip()
+    if not reference:
+        return _err("Paystack reference is required.", 400)
+
+    sales_service._recompute_totals(sale)
+    expected_minor_amount = int(Decimal(sale.total_amount).quantize(Decimal("0.01")) * 100)
+    method = (data.get("payment_method") or "").strip().lower()
+    if method not in {"momo", "card"}:
+        return _err('Paystack verification requires "momo" or "card" method.', 400)
+    try:
+        verified = paystack_service.verify_transaction(reference)
+    except paystack_service.PaystackError as e:
+        return _err(str(e), 400)
+
+    if verified.get("status") != "success":
+        return _err("Payment was not successful or was cancelled.", 400)
+    if int(verified.get("amount") or 0) != expected_minor_amount:
+        return _err("Verified payment amount does not match sale total.", 400)
+
+    try:
+        completed = sales_service.complete_sale(
+            sale_id,
+            actor_user_id=g.current_user.id,
+            payment_method=method,
+        )
+    except (LookupError, ValueError, PermissionError) as e:
+        return _err(str(e), 400)
+    return jsonify({"sale": sales_service.sale_to_dict(completed)})
 
 
 @bp.delete("/<int:sale_id>")
