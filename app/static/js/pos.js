@@ -78,6 +78,14 @@
     refreshCashChange();
   };
 
+  const openReceiptWindow = (receiptUrl) => {
+    const popup = window.open(receiptUrl, "_blank", "noopener");
+    if (popup) return true;
+    // Fallback when popup blockers prevent new tabs.
+    window.location.assign(receiptUrl);
+    return false;
+  };
+
   const api = async (url, options = {}) => {
     const res = await fetch(url, {
       credentials: "same-origin",
@@ -315,8 +323,13 @@
           els.receiptLink.href = receiptUrl;
           els.receiptLink.classList.remove("d-none");
         }
-        setFeedback(`Payment verified and sale completed. Receipt #${sale.id} ready.`, "success");
-        window.open(receiptUrl, "_blank", "noopener");
+        const opened = openReceiptWindow(receiptUrl);
+        setFeedback(
+          opened
+            ? `Payment verified and sale completed. Receipt #${sale.id} opened.`
+            : `Payment verified and sale completed. Popup blocked; opening receipt on this tab.`,
+          "success"
+        );
         return;
       }
       const data = await api(`/sales/${sale.id}/complete`, {
@@ -330,9 +343,13 @@
         els.receiptLink.href = receiptUrl;
         els.receiptLink.classList.remove("d-none");
       }
-      setFeedback(`Sale completed. Receipt #${sale.id} ready.`, "success");
-      // Non-blocking: open printable receipt in a new tab right after checkout.
-      window.open(receiptUrl, "_blank", "noopener");
+      const opened = openReceiptWindow(receiptUrl);
+      setFeedback(
+        opened
+          ? `Sale completed. Receipt #${sale.id} opened.`
+          : `Sale completed. Popup blocked; opening receipt on this tab.`,
+        "success"
+      );
     } catch (err) {
       setFeedback(err.message, "danger");
     } finally {
